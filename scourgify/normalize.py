@@ -64,6 +64,13 @@ from scourgify.validations import (
 
 # Constants
 
+LINE1_POBOX_USADDRESS_LABELS = (
+    'USPSBoxGroupType',
+    'USPSBoxGroupID',
+    'USPSBoxType',
+    'USPSBoxID'
+)
+
 LINE1_USADDRESS_LABELS = (
     'AddressNumber',
     'StreetName',
@@ -99,11 +106,6 @@ LAST_LINE_LABELS = (
 )
 
 AMBIGUOUS_LABELS = (
-    'Recipient',
-    'USPSBoxType',
-    'USPSBoxID',
-    'USPSBoxGroupType',
-    'USPSBoxGroupID',
     'NotAddress'
 )
 
@@ -207,7 +209,8 @@ def normalize_addr_str(addr_str,         # type: str
                     # try a different additional processing function
                     pass
 
-    if parsed_addr and not parsed_addr.get('StreetName'):
+    if parsed_addr and not (parsed_addr.get('StreetName') 
+                            or parsed_addr.get('USPSBoxType')):
         addr_dict = dict(
             address_line_1=addr_str, address_line_2=line2, city=city,
             state=state, postal_code=zipcode
@@ -237,7 +240,14 @@ def normalize_addr_str(addr_str,         # type: str
         line1 = get_normalized_line_segment(
             parsed_addr, LINE1_USADDRESS_LABELS
         )
-        validate_parens_groups_parsed(line1)
+        if line1:
+            validate_parens_groups_parsed(line1)
+        pobox_line1 = get_normalized_line_segment(parsed_addr, 
+                                                  LINE1_POBOX_USADDRESS_LABELS)
+        if pobox_line1:
+            components = [line for line in [line1, line2] if line]
+            line2 = ', '.join(components) if components else None
+            line1 = pobox_line1
     else:
         # line1 is set to addr_str so complete dict can be passed to error.
         line1 = addr_str
@@ -549,16 +559,9 @@ def normalize_occupancy_type(parsed_addr, default=None):
     if ((occupancy_id and not occupancy_id.startswith('#'))
             and not occupancy_type_abbr):
         occupancy_type_abbr = default
-    if occupancy_type_abbr:
+    if (occupancy_type_abbr and occupancy_id):
         parsed_list = list(parsed_addr.items())
-        try:
-            index = parsed_list.index(('OccupancyIdentifier', occupancy_id))
-        except ValueError:
-            msg = (
-                'Address has an occupancy type (ie: Apt, Unit, etc) '
-                'but no occupancy identifier (ie: 101, A, etc)'
-            )
-            raise AddressNormalizationError(msg)
+        index = parsed_list.index(('OccupancyIdentifier', occupancy_id))
         parsed_list.insert(index, (occupancy_type_label, occupancy_type_abbr))
         parsed_addr = OrderedDict(parsed_list)
     return parsed_addr
