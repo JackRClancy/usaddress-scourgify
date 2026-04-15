@@ -33,7 +33,7 @@ Both functions, and the class init, take an address string, or a dict-like objec
         
         normalize_address_record({
             'address_line_1': '123 southwest Main street',
-            'address_line_2': 'unit 2,
+            'address_line_2': 'unit 2',
             'city': 'Boring',
             'state': 'or',
             'postal_code': '97203'
@@ -48,6 +48,40 @@ expected output
 
        {
             'address_line_1': '123 SW MAIN ST',
+            'address_line_2': 'UNIT 2'
+            'city': 'BORING',
+            'state': 'OR',
+            'postal_code': '97203'
+        }
+
+
+By default, the output style abbreviates all pre or post directionals, street types, and occupancy types.
+Alternately, if you would like to receive your output with full word directionals and street types, you can use the `long_hand` parameter.
+
+.. code-block:: python
+
+
+        from scourgify import normalize_address_record, NormalizeAddress
+
+        normalize_address_record('123 southwest Main street, Boring, or, 97203', long_hand=True)
+
+        normalize_address_record({
+            'address_line_1': '123 southwest Main street',
+            'address_line_2': 'unit 2,
+            'city': 'Boring',
+            'state': 'or',
+            'postal_code': '97203'
+        })
+
+        NormalizeAddress('123 southwest Main street, Boring, or, 97203', long_hand=True).normalize()
+
+expected output
+
+
+.. code-block:: python
+
+       {
+            'address_line_1': '123 SOUTHWEST MAIN STREET',
             'address_line_2': 'UNIT 2'
             'city': 'BORING',
             'state': 'OR',
